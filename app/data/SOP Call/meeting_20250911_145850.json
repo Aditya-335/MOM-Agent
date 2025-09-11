@@ -1,0 +1,9 @@
+{
+  "id": "20250911_145850",
+  "title": "SOP",
+  "date": "2025-09-11 14:58",
+  "transcript": "Alice: Thanks everyone for joining. Today we need to finalize the scope for Phase 2 of Project Orion.\n\nCarol: From the client side, our main requirement is integration with the new CRM system. We’d like to ensure data synchronization happens at least every 30 minutes.\n\nBob: That’s doable. We’ll need access to the CRM staging environment to start testing.\n\nDavid: I can provide staging access by next Monday. I’ll also arrange credentials for your team.\n\nAlice: Great. On timelines, our internal goal is to have Phase 2 ready for UAT by November 15th. Does that work for the client?\n\nCarol: Yes, but we’d like weekly status updates to track progress.\n\nAlice: Absolutely, we can set up a standing meeting every Friday at 10 AM.\n\nBob: One technical point: we’ll need confirmation on whether we should use the client’s API gateway or connect directly to the CRM.\n\nDavid: Use the API gateway. I’ll confirm documentation is up to date.\n\nAlice: Perfect. Let’s summarize action items before we close.",
+  "draft_mom": "**Minutes of Meeting**\n\n**Project Name:** SOP Call\n**Meeting Date:** 2025-09-11\n**Meeting Attendees:** \n- John Doe (Client)\n- Jane Smith (Spikra Team)\n\n**Discussion Points:**\n1. Project requirements review\n2. Timeline discussion\n3. Budget considerations\n\n**Decisions Made:**\n1. Project timeline approved\n2. Next milestone defined\n\n**Action Items:**\n\n**Client Team:**\n- [ ] Provide detailed requirements document\n- [ ] Review and approve design mockups\n\n**Spikra Team:**\n- [ ] Create project timeline\n- [ ] Prepare design mockups\n- [ ] Set up development environment\n\n**Prepared by:** AI Assistant\n\n---\n*Note: This is a sample MoM generated from the transcript. Please edit as needed.*",
+  "final_mom": "",
+  "attendees": []
+}
