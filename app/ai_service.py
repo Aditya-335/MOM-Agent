@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 class ClaudeAIService:
-    def __init__(self, api_key: str, model: str = "claude-4-sonnet-20250220"):
+    def __init__(self, api_key: str, model: str = "claude-3-5-sonnet-20240620"):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
         # Fallback models to try if the primary fails
