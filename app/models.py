@@ -128,6 +128,29 @@ class DataManager:
         
         return "\n".join(context_parts)
     
+    def delete_meeting(self, project_name: str, meeting_id: str) -> bool:
+        """Delete a specific meeting"""
+        meeting_file = self.base_dir / project_name / f"meeting_{meeting_id}.json"
+        try:
+            if meeting_file.exists():
+                meeting_file.unlink()
+                return True
+            return False
+        except Exception:
+            return False
+
+    def delete_project(self, project_name: str) -> bool:
+        """Delete entire project and all its meetings"""
+        import shutil
+        project_dir = self.base_dir / project_name
+        try:
+            if project_dir.exists():
+                shutil.rmtree(project_dir)
+                return True
+            return False
+        except Exception:
+            return False
+
     def _save_project_metadata(self, project_name: str, project: Project):
         """Save project metadata"""
         project_file = self.base_dir / project_name / "project.json"

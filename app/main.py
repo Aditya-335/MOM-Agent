@@ -4,9 +4,34 @@ from datetime import datetime
 from dotenv import load_dotenv
 from models import DataManager
 from ai_service import ClaudeAIService
+import re
 
 # Load environment variables
 load_dotenv()
+
+def markdown_to_clean_text(markdown_text):
+    """Convert markdown text to clean, readable text"""
+    if not markdown_text:
+        return ""
+
+    # Remove markdown formatting
+    clean_text = markdown_text
+
+    # Remove bold/italic markers
+    clean_text = re.sub(r'\*\*(.*?)\*\*', r'\1', clean_text)  # Bold
+    clean_text = re.sub(r'\*(.*?)\*', r'\1', clean_text)      # Italic
+
+    # Convert checkboxes to simple bullets
+    clean_text = re.sub(r'- \[ \] ', '• ', clean_text)        # Empty checkboxes
+    clean_text = re.sub(r'- \[x\] ', '• ', clean_text)        # Checked checkboxes
+
+    # Clean up numbered lists (keep the numbers)
+    clean_text = re.sub(r'^(\d+)\. ', r'\1. ', clean_text, flags=re.MULTILINE)
+
+    # Clean up bullet points
+    clean_text = re.sub(r'^- ', '• ', clean_text, flags=re.MULTILINE)
+
+    return clean_text.strip()
 
 # Page configuration
 st.set_page_config(
@@ -51,7 +76,7 @@ def init_session_state():
     if 'ai_service' not in st.session_state:
         # Initialize Claude AI service with environment variables
         env_api_key = os.getenv("CLAUDE_API_KEY", "").strip()
-        env_model = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
+        env_model = os.getenv("CLAUDE_MODEL", "claude-3-sonnet-20240229")
         
         if env_api_key and env_api_key != "your_claude_api_key_here":
             st.session_state.ai_service = ClaudeAIService(env_api_key, env_model)
@@ -67,6 +92,8 @@ def init_session_state():
     
     if 'current_mom' not in st.session_state:
         st.session_state.current_mom = ""
+
+# Clean MoM-only setup - no email services needed
 
 
 def sidebar_projects():
@@ -96,33 +123,90 @@ def sidebar_projects():
         
         for project in projects:
             with st.expander(f"📁 {project}", expanded=(project == st.session_state.selected_project)):
-                if st.button(f"Select {project}", key=f"select_project_{project}"):
-                    st.session_state.selected_project = project
-                    st.session_state.selected_meeting = None
-                    st.rerun()
-                
-                # Create new meeting in project
-                meeting_title = st.text_input(f"New Meeting Title", key=f"meeting_title_{project}")
-                if st.button(f"➕ Add Meeting", key=f"add_meeting_{project}"):
-                    if meeting_title.strip():
-                        meeting_id = st.session_state.data_manager.create_meeting(project, meeting_title.strip())
-                        st.success(f"Meeting created!")
+                # Project actions row
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    if st.button(f"Select {project}", key=f"select_project_{project}"):
                         st.session_state.selected_project = project
-                        st.session_state.selected_meeting = meeting_id
+                        st.session_state.selected_meeting = None
                         st.rerun()
-                    else:
-                        st.error("Please enter a meeting title")
-                
-                # List meetings in project
-                meetings = st.session_state.data_manager.get_project_meetings(project)
-                if meetings:
-                    st.markdown("**Meetings:**")
-                    for meeting in meetings:
-                        meeting_display = f"{meeting['title']} ({meeting['date']})"
-                        if st.button(meeting_display, key=f"meeting_{project}_{meeting['id']}"):
-                            st.session_state.selected_project = project
-                            st.session_state.selected_meeting = meeting['id']
+                with col2:
+                    if st.button("🗑️", key=f"delete_project_{project}", help="Delete Project"):
+                        # Set confirmation state
+                        st.session_state[f"confirm_delete_project_{project}"] = True
+                        st.rerun()
+
+                # Project deletion confirmation
+                if st.session_state.get(f"confirm_delete_project_{project}", False):
+                    st.warning(f"⚠️ Delete project '{project}' and ALL its meetings?")
+                    col1, col2, col3 = st.columns([1, 1, 1])
+                    with col1:
+                        if st.button("✅ Yes", key=f"confirm_yes_{project}", type="primary", use_container_width=True):
+                            if st.session_state.data_manager.delete_project(project):
+                                if st.session_state.selected_project == project:
+                                    st.session_state.selected_project = None
+                                    st.session_state.selected_meeting = None
+                                st.success(f"Project '{project}' deleted!")
+                                del st.session_state[f"confirm_delete_project_{project}"]
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete project")
+                    with col3:
+                        if st.button("❌ No", key=f"confirm_no_{project}", use_container_width=True):
+                            del st.session_state[f"confirm_delete_project_{project}"]
                             st.rerun()
+
+                # Only show project contents if not in delete confirmation mode
+                if not st.session_state.get(f"confirm_delete_project_{project}", False):
+                    # Create new meeting in project
+                    meeting_title = st.text_input(f"New Meeting Title", key=f"meeting_title_{project}")
+                    if st.button(f"➕ Add Meeting", key=f"add_meeting_{project}"):
+                        if meeting_title.strip():
+                            meeting_id = st.session_state.data_manager.create_meeting(project, meeting_title.strip())
+                            st.success(f"Meeting created!")
+                            st.session_state.selected_project = project
+                            st.session_state.selected_meeting = meeting_id
+                            st.rerun()
+                        else:
+                            st.error("Please enter a meeting title")
+
+                    # List meetings in project
+                    meetings = st.session_state.data_manager.get_project_meetings(project)
+                    if meetings:
+                        st.markdown("**Meetings:**")
+                        for meeting in meetings:
+                            # Meeting row with delete button
+                            col1, col2 = st.columns([4, 1])
+                            with col1:
+                                meeting_display = f"{meeting['title']} ({meeting['date']})"
+                                if st.button(meeting_display, key=f"meeting_{project}_{meeting['id']}"):
+                                    st.session_state.selected_project = project
+                                    st.session_state.selected_meeting = meeting['id']
+                                    st.rerun()
+                            with col2:
+                                if st.button("🗑️", key=f"delete_meeting_{project}_{meeting['id']}", help="Delete Meeting"):
+                                    # Set confirmation state
+                                    st.session_state[f"confirm_delete_meeting_{project}_{meeting['id']}"] = True
+                                    st.rerun()
+
+                            # Meeting deletion confirmation
+                            if st.session_state.get(f"confirm_delete_meeting_{project}_{meeting['id']}", False):
+                                st.warning(f"⚠️ Delete meeting '{meeting['title']}'?")
+                                col1, col2, col3 = st.columns([1, 1, 1])
+                                with col1:
+                                    if st.button("✅ Yes", key=f"confirm_yes_meeting_{project}_{meeting['id']}", type="primary", use_container_width=True):
+                                        if st.session_state.data_manager.delete_meeting(project, meeting['id']):
+                                            if st.session_state.selected_meeting == meeting['id']:
+                                                st.session_state.selected_meeting = None
+                                            st.success(f"Meeting '{meeting['title']}' deleted!")
+                                            del st.session_state[f"confirm_delete_meeting_{project}_{meeting['id']}"]
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to delete meeting")
+                                with col3:
+                                    if st.button("❌ No", key=f"confirm_no_meeting_{project}_{meeting['id']}", use_container_width=True):
+                                        del st.session_state[f"confirm_delete_meeting_{project}_{meeting['id']}"]
+                                        st.rerun()
 
 def main_content():
     """Render main content area"""
@@ -151,16 +235,16 @@ def main_content():
     st.markdown(f"**Project:** {st.session_state.selected_project} | **Date:** {meeting_data['date']}")
     
     # Create tabs for different sections
-    tab1, tab2, tab3 = st.tabs(["📝 Generate MoM", "✏️ Edit MoM", "📋 Final MoM"])
+    tab1, tab2, tab3 = st.tabs(["📝 Generate MoM", "✏️ Edit MoM", "📋 Final Draft"])
     
     with tab1:
         st.markdown('<div class="section-header">Meeting Transcript</div>', unsafe_allow_html=True)
-        
+
         # Transcript input
         transcript = st.text_area(
             "Paste your meeting transcript here:",
             value=meeting_data.get('transcript', ''),
-            height=300,
+            height=250,
             placeholder="Paste the meeting transcript here..."
         )
         
@@ -225,9 +309,10 @@ def main_content():
         
         with col2:
             if st.button("📋 Copy to Clipboard", type="primary"):
-                # Display content in a copyable format
-                st.success("📋 MoM ready to copy - use the copy button in the code block below:")
-                st.code(edited_mom, language="markdown")
+                # Convert markdown to clean text and display
+                clean_text = markdown_to_clean_text(edited_mom)
+                st.success("📋 Clean MoM ready to copy - use the copy button in the text block below:")
+                st.code(clean_text, language="text")
     
     with tab3:
         st.markdown('<div class="section-header">Final Minutes of Meeting</div>', unsafe_allow_html=True)
@@ -239,9 +324,11 @@ def main_content():
             
             # Copy button
             if st.button("📋 Copy Final MoM", type="primary", key="copy_final"):
-                # Display content in a copyable format  
-                st.success("📋 Final MoM ready to copy - use the copy button in the code block below:")
-                st.code(final_mom, language="markdown")
+                # Convert markdown to clean text and display
+                clean_text = markdown_to_clean_text(final_mom)
+                st.success("📋 Clean Final MoM ready to copy - use the copy button in the text block below:")
+                st.code(clean_text, language="text")
+
         else:
             st.info("No MoM generated yet. Go to 'Generate MoM' tab to create one.")
 
