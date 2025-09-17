@@ -14,17 +14,17 @@ def check_dependencies():
     try:
         import streamlit
         import requests
-        print("✅ All dependencies are installed")
+        print("All dependencies are installed")
         return True
     except ImportError as e:
-        print(f"❌ Missing dependency: {e}")
+        print(f"Missing dependency: {e}")
         print("Installing required packages...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
         return True
 
 def main():
     """Main function to run the application"""
-    print("🚀 Starting MoM Agent - Minutes of Meeting Generator")
+    print("Starting MoM Agent - Minutes of Meeting Generator")
     print("=" * 50)
     
     # Check dependencies
@@ -44,9 +44,9 @@ def main():
             "--server.headless", "false"
         ])
     except KeyboardInterrupt:
-        print("\n👋 Application stopped by user")
+        print("\nApplication stopped by user")
     except Exception as e:
-        print(f"❌ Error running application: {e}")
+        print(f"Error running application: {e}")
 
 if __name__ == "__main__":
     main()

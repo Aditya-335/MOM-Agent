@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 from models import DataManager
-from ai_service import ClaudeAIService
+from ai_service import OpenAIService
 import re
 
 # Load environment variables
@@ -74,14 +74,14 @@ def init_session_state():
         st.session_state.data_manager = DataManager()
     
     if 'ai_service' not in st.session_state:
-        # Initialize Claude AI service with environment variables
-        env_api_key = os.getenv("CLAUDE_API_KEY", "").strip()
-        env_model = os.getenv("CLAUDE_MODEL", "claude-3-sonnet-20240229")
+        # Initialize OpenAI service with environment variables
+        env_api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        env_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         
-        if env_api_key and env_api_key != "your_claude_api_key_here":
-            st.session_state.ai_service = ClaudeAIService(env_api_key, env_model)
+        if env_api_key and env_api_key != "your_openai_api_key_here":
+            st.session_state.ai_service = OpenAIService(env_api_key, env_model)
         else:
-            st.error("⚠️ Claude API key not configured in .env file")
+            st.error("⚠️ OpenAI API key not configured in .env file")
             st.stop()
     
     if 'selected_project' not in st.session_state:
